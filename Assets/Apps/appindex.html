@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tax Advisory Simulator</title>
+    <style>
+        :root {
+            --wall-color: #e0e5ec;
+            --desk-color-1: #8b5a2b;
+            --desk-color-2: #6b4226;
+            --paper-color: #fcfcf5;
+            --book-color: #2c3e50;
+            --text-dark: #222222;
+            --accent-blue: #1a4f76;
+            --accent-green: #2e7d32;
+            --accent-red: #c62828;
+            --accent-yellow: #d84315;
+            --speech-bg: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--wall-color); 
+            color: var(--text-dark);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        header {
+            background-color: var(--book-color);
+            color: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            z-index: 10;
+        }
+
+        header h1 {
+            font-size: 1.2rem;
+            font-weight: 400;
+            letter-spacing: 1px;
+        }
+
+        .score-display {
+            background-color: rgba(255,255,255,0.1);
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        /* The Office POV Layout */
+        .office-room {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* The Client sitting across the desk */
+        .client-area {
+            flex: 0 0 35%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            padding-bottom: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .client-emoji {
+            font-size: 8rem;
+            line-height: 1;
+            filter: drop-shadow(0 10px 15px rgba(0,0,0,0.2));
+            transition: transform 0.3s ease;
+        }
+
+        /* The Speech Bubble */
+        .speech-bubble {
+            background: var(--speech-bg);
+            border-radius: 12px;
+            padding: 20px 25px;
+            max-width: 600px;
+            text-align: center;
+            font-size: 1.15rem;
+            font-style: italic;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            position: relative;
+            margin-bottom: 30px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .speech-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 15px 15px 0;
+            border-style: solid;
+            border-color: var(--speech-bg) transparent transparent transparent;
+            display: block;
+            width: 0;
+            z-index: 2;
+        }
+        
+        .speech-bubble::before {
+            content: '';
+            position: absolute;
+            bottom: -18px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 17px 17px 0;
+            border-style: solid;
+            border-color: #e0e0e0 transparent transparent transparent;
+            display: block;
+            width: 0;
+            z-index: 1;
+        }
+
+        .speech-bubble span::before { content: '"'; color: #999; font-size: 1.5rem; }
+        .speech-bubble span::after { content: '"'; color: #999; font-size: 1.5rem; }
+
+        /* The Desk Surface */
+        .desk-surface {
+            flex: 1;
+            background: linear-gradient(to bottom, var(--desk-color-1), var(--desk-color-2));
+            border-top: 5px solid #5a361c;
+            box-shadow: inset 0 20px 30px rgba(0,0,0,0.2);
+            position: relative;
+            display: grid;
+            grid-template-columns: 35% 65%;
+            padding: 40px;
+            gap: 40px;
+            z-index: 2;
+        }
+
+        /* Items on the desk */
+        .desk-item {
+            background-color: var(--paper-color);
+            box-shadow: 5px 10px 20px rgba(0,0,0,0.4);
+            border-radius: 2px;
+            padding: 30px;
+            position: relative;
+            z-index: 4; 
+        }
+
+        /* Tax Code Book (Left Side) */
+        .reference-book {
+            border-left: 15px solid var(--book-color);
+            transform: rotate(-2deg);
+            padding: 20px; 
+        }
+
+        .reference-book h2 {
+            font-size: 1.05rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--book-color);
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 8px;
+            margin-bottom: 12px;
+        }
+
+        .reference-text {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.85rem; 
+            line-height: 1.5;
+            color: #333;
+        }
+
+        /* Advisory Form (Right Side) */
+        .advisory-form {
+            transform: rotate(1deg);
+            background-color: #fffdf7; 
+            border-top: 15px solid #d4c5b0; 
+        }
+
+        .advisory-form h2 {
+            font-size: 1.2rem;
+            color: var(--text-dark);
+            margin-bottom: 20px;
+            text-align: center;
+            font-family: 'Times New Roman', Times, serif;
+            text-decoration: underline;
+        }
+
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .option-btn {
+            background-color: transparent;
+            border: 1px solid #ccc;
+            color: var(--text-dark);
+            padding: 12px 15px;
+            border-radius: 4px;
+            font-size: 0.95rem;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.1s ease;
+            position: relative;
+            padding-left: 35px;
+        }
+
+        .option-btn::before {
+            content: '';
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 14px;
+            height: 14px;
+            border: 2px solid #999;
+            border-radius: 50%;
+        }
+
+        .option-btn:hover {
+            background-color: rgba(44, 62, 80, 0.05);
+            border-color: var(--book-color);
+        }
+
+        .option-btn:hover::before {
+            border-color: var(--book-color);
+            background-color: var(--book-color);
+        }
+
+        /* Modal / End Screen Overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background-color: var(--paper-color);
+            padding: 40px;
+            border-radius: 4px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+            border-top: 10px solid var(--book-color);
+            position: relative;
+        }
+
+        /* Stamp Effect for Points */
+        .stamp {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            border: 4px solid;
+            padding: 5px 10px;
+            border-radius: 4px;
+            transform: rotate(15deg);
+            opacity: 0.8;
+        }
+
+        .stamp.approved { color: var(--accent-green); border-color: var(--accent-green); }
+        .stamp.partial { color: var(--accent-yellow); border-color: var(--accent-yellow); }
+        .stamp.denied { color: var(--accent-red); border-color: var(--accent-red); }
+
+        .modal-header {
+            font-size: 1.4rem;
+            font-family: 'Times New Roman', Times, serif;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        .modal-review {
+            font-size: 1rem;
+            line-height: 1.6;
+            margin-bottom: 30px;
+            text-align: left;
+            padding: 15px;
+            background-color: rgba(0,0,0,0.03);
+            border-left: 3px solid var(--book-color);
+        }
+
+        .action-btn {
+            background-color: var(--book-color);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            font-size: 1.05rem;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .action-btn:hover {
+            opacity: 0.9;
+        }
+
+        /* End Screen Styling */
+        #end-screen .modal-content {
+            border-top-color: var(--accent-blue);
+        }
+
+        #performance-anecdote {
+            font-style: italic;
+            margin-bottom: 20px;
+            line-height: 1.5;
+            padding: 15px;
+            background-color: rgba(0,0,0,0.03);
+            border-left: 4px solid var(--book-color);
+            text-align: left;
+        }
+
+        @media (max-width: 800px) {
+            .desk-surface {
+                grid-template-columns: 1fr;
+                gap: 20px;
+                padding: 20px;
+            }
+            .client-emoji { font-size: 6rem; }
+            .speech-bubble { font-size: 1rem; margin: 0 20px 20px 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Tax Advisory Simulator</h1>
+        <div class="score-display">Rating: <span id="score">0</span></div>
+    </header>
+
+    <div class="office-room">
+        <div class="client-area" id="client-area">
+            <div class="speech-bubble" id="speech-bubble">
+                <span id="dilemma-text"></span>
+            </div>
+            <div class="client-emoji" id="client-emoji"></div>
+        </div>
+
+        <div class="desk-surface" id="desk-surface">
+            <div class="desk-item reference-book">
+                <h2>Tax Code Reference</h2>
+                <div class="reference-text" id="reference-text"></div>
+            </div>
+
+            <div class="desk-item advisory-form">
+                <h2>Official Advisory Form</h2>
+                <div class="options-container" id="options-container">
+                    </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal">
+        <div class="modal-content">
+            <div class="stamp" id="stamp-mark"></div>
+            <div class="modal-header">Internal Partner Review</div>
+            <div class="modal-review" id="modal-review"></div>
+            <button class="action-btn" onclick="nextScenario()">Call Next Client</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="end-screen">
+        <div class="modal-content">
+            <div class="modal-header">End of Shift</div>
+            <p style="font-size: 1.1rem; margin-bottom: 10px;">Your Final Firm Rating:</p>
+            <h2 style="font-size: 3rem; color: var(--book-color); margin-bottom: 20px;"><span id="final-score">0</span></h2>
+            
+            <p id="performance-anecdote"></p>
+
+            <p style="margin-bottom: 30px; color: #666;">The waiting room is empty. You may take a break or start a new shift.</p>
+            <button class="action-btn" onclick="restartSimulation()">Start New Shift</button>
+        </div>
+    </div>
+
+    <script>
+        // Master list of all available scenarios with updated human emojis
+        const allScenarios = [
+            {
+                emoji: "🤵‍♂️",
+                dilemma: "I need to maximize my charitable deductions this year. My AGI is $500k. I gave $100k in cash, but I also have $150k in appreciated stock to donate. What's the best strategy?",
+                reference: "IRC § 170 limits: Cash contributions to public charities limited to 60% of AGI. Contributions of appreciated capital gain property (stock) limited to 30% of AGI. Excess carries forward for 5 years.",
+                options: [
+                    { text: "Deduct maximum cash this year; carry forward all stock.", points: 0, review: "Incorrect. Ignoring the separate limit for appreciated stock fails to optimize current-year tax savings." },
+                    { text: "Deduct stock up to 30% AGI and cash up to overall 50% limits.", points: 5, review: "Partially Correct. The logic is sound, but we expect exact mathematical optimization rather than general guidelines for a client of this net worth." },
+                    { text: "Calculate precise optimization leveraging both the 30% stock limit and 60% cash limit to maximize current year deductions.", points: 10, review: "Correct. Excellent utilization of both limits to maximize immediate financial benefit." }
+                ]
+            },
+            {
+                emoji: "👩‍🏫",
+                dilemma: "We file jointly (AGI $150k). We paid $10,000 in undergrad tuition for our son. Should we take the American Opportunity Tax Credit or Lifetime Learning Credit?",
+                reference: "AOTC: Up to $2,500/student for first 4 years. LLC: Up to $2,000/return. Both phase out for MFJ starting at $160,000 MAGI.",
+                options: [
+                    { text: "Claim the Lifetime Learning Credit (LLC); it's safer and worth up to $2,000.", points: 5, review: "Partially Correct. LLC is valid, but the AOTC is generally more valuable ($2,500) for an undergraduate." },
+                    { text: "Claim the American Opportunity Tax Credit (AOTC) for the full $2,500.", points: 10, review: "Correct. AOTC is the optimal choice for undergraduate expenses, yielding the highest credit." },
+                    { text: "Do not claim either; your $150k AGI is over the phase-out limit.", points: 0, review: "Incorrect. Joint AGI of $150k is below the $160k phase-out threshold for these credits." }
+                ]
+            },
+            {
+                emoji: "🕵️‍♂️", 
+                dilemma: "Keep it quiet... I 'acquired' some corporate funds under the table. Do I really have to report this? And can I write off the ski masks I bought as a business expense?",
+                reference: "IRC § 61: Gross income includes illegal activities. IRC § 162(c): No deduction allowed for illegal payments. Courts disallow deductions for expenses intrinsically linked to illegal operations.",
+                options: [
+                    { text: "Illegal income falls outside the tax code. No need to report.", points: 0, review: "Incorrect. Review the Al Capone case. I am notifying the authorities." },
+                    { text: "Report the income on Schedule 1, and deduct the ski masks as ordinary expenses.", points: 5, review: "Partially Correct. Income is taxable, but expenses from illegal enterprises are strictly non-deductible." },
+                    { text: "Report the income immediately; absolutely no deductions are allowed.", points: 10, review: "Correct. Excellent grasp of tax law. We are dropping this client immediately." }
+                ]
+            },
+            {
+                emoji: "💁‍♀️", 
+                dilemma: "I'm a full-time vlogger! I bought a Golden Retriever named 'Tax Bracket' to be in my videos. He's basically my co-star and security system. I can write off his food and vet bills on my Schedule C, right?",
+                reference: "IRC § 162: Allows deduction of all ordinary and necessary expenses paid in carrying on any trade or business. However, inherently personal expenses (like family pets) are nondeductible unless the animal is strictly for a recognized business purpose (e.g., guard dogs for physical warehouses, livestock).",
+                options: [
+                    { text: "Yes, fully deduct the dog as an advertising/marketing expense.", points: 0, review: "Incorrect. The IRS heavily scrutinizes mixed-use personal assets, and pets are almost universally considered non-deductible personal expenses regardless of video appearances." },
+                    { text: "Calculate the dog's 'screen time' percentage and deduct that portion.", points: 5, review: "Partially Correct. You understand the allocation principle for mixed-use assets, but applying it to a living pet is highly aggressive and likely to fail audit." },
+                    { text: "No deductions. A pet is a personal expense and fails the 'ordinary and necessary' test for a vlogging business.", points: 10, review: "Correct. A conservative and accurate approach. 'Tax Bracket' the dog is not a valid tax write-off." }
+                ]
+            },
+            {
+                emoji: "🧑‍💻", 
+                dilemma: "I'm a W-2 remote software engineer. I turned my spare bedroom into a dedicated home office. I'm excited to deduct a portion of my rent and utilities this year!",
+                reference: "TCJA (Tax Cuts and Jobs Act) of 2017: Suspended miscellaneous itemized deductions subject to the 2% AGI floor. This effectively eliminated the home office deduction for W-2 employees for tax years 2018 through 2025. Only self-employed individuals (Schedule C) may claim it.",
+                options: [
+                    { text: "Yes, divide office square footage by total square footage to find your deductible rent percentage.", points: 0, review: "Incorrect. You are applying the self-employed Schedule C rule to a W-2 employee." },
+                    { text: "You can't deduct rent, but you can deduct the cost of the desk and monitors you bought.", points: 5, review: "Partially Correct. Federal deductions are gone for W-2 employees, though some state tax codes still allow unreimbursed employee expenses." },
+                    { text: "As a W-2 employee, the home office deduction is currently suspended under federal law. You cannot claim it.", points: 10, review: "Correct. You correctly identified the TCJA restriction regarding W-2 statutory employees." }
+                ]
+            },
+            {
+                emoji: "🤦‍♂️", 
+                dilemma: "I lost $15,000 day-trading crypto this year. My regular W-2 salary is $80,000. I can just subtract the $15k loss from the $80k to lower my taxable income to $65k, right?",
+                reference: "IRC § 1211(b): If capital losses exceed capital gains, noncorporate taxpayers may deduct the excess against ordinary income up to a maximum of $3,000 per year ($1,500 if MFS). Excess losses are carried forward indefinitely.",
+                options: [
+                    { text: "Yes, capital losses offset ordinary income dollar for dollar.", points: 0, review: "Incorrect. Capital losses face strict limitations when offsetting ordinary W-2 income." },
+                    { text: "You can deduct $3,000 against ordinary income. The remaining $12,000 is lost.", points: 5, review: "Partially Correct. You know the $3,000 limit, but you forgot that unused capital losses can be carried forward." },
+                    { text: "You can deduct a maximum of $3,000 against ordinary income this year, and carry the remaining $12,000 forward.", points: 10, review: "Correct. Perfect application of the capital loss limitation and carryover rules." }
+                ]
+            }
+        ];
+
+        let activeScenarios = [];
+        let currentScenarioIndex = 0;
+        let totalScore = 0;
+
+        // Fisher-Yates Shuffle
+        function shuffleArray(array) {
+            let shuffled = [...array];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        }
+
+        function startGame() {
+            // Shuffle the scenarios and reset variables
+            activeScenarios = shuffleArray(allScenarios);
+            currentScenarioIndex = 0;
+            totalScore = 0;
+            document.getElementById('score').innerText = totalScore;
+            
+            // Hide Modals
+            document.getElementById('modal').style.display = 'none';
+            document.getElementById('end-screen').style.display = 'none';
+            
+            loadScenario();
+        }
+
+        function loadScenario() {
+            if (currentScenarioIndex >= activeScenarios.length) {
+                showEndScreen();
+                return;
+            }
+
+            const scenario = activeScenarios[currentScenarioIndex];
+            
+            // Animate Client Entry
+            const emojiEl = document.getElementById('client-emoji');
+            emojiEl.style.transform = 'scale(0)';
+            setTimeout(() => { emojiEl.style.transform = 'scale(1)'; }, 50);
+
+            document.getElementById('client-emoji').innerText = scenario.emoji;
+            document.getElementById('dilemma-text').innerText = scenario.dilemma;
+            document.getElementById('reference-text').innerText = scenario.reference;
+            
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = ''; 
+            
+            scenario.options.forEach((option, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.innerText = option.text;
+                btn.onclick = () => selectOption(index);
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        function selectOption(optionIndex) {
+            const scenario = activeScenarios[currentScenarioIndex];
+            const selectedOption = scenario.options[optionIndex];
+            
+            // Update Score
+            totalScore += selectedOption.points;
+            document.getElementById('score').innerText = totalScore;
+            
+            // Populate Modal
+            document.getElementById('modal-review').innerHTML = `<strong>Feedback:</strong><br><br>${selectedOption.review}`;
+            
+            const stampEl = document.getElementById('stamp-mark');
+            if (selectedOption.points === 10) {
+                stampEl.innerText = '+10 PTS';
+                stampEl.className = 'stamp approved';
+            } else if (selectedOption.points === 5) {
+                stampEl.innerText = '+5 PTS';
+                stampEl.className = 'stamp partial';
+            } else {
+                stampEl.innerText = '0 PTS';
+                stampEl.className = 'stamp denied';
+            }
+            
+            // Show Modal
+            document.getElementById('modal').style.display = 'flex';
+        }
+
+        function nextScenario() {
+            document.getElementById('modal').style.display = 'none';
+            currentScenarioIndex++;
+            loadScenario();
+        }
+
+        function showEndScreen() {
+            document.getElementById('end-screen').style.display = 'flex';
+            
+            const maxScore = activeScenarios.length * 10;
+            document.getElementById('final-score').innerText = `${totalScore} / ${maxScore}`;
+            
+            // Generate Firm Performance Anecdote
+            const percentage = totalScore / maxScore;
+            let anecdoteText = "";
+            
+            if (percentage >= 0.8) {
+                anecdoteText = "The partners are thrilled. Your flawless advice helped the firm secure a massive new high-net-worth client, and you've been fast-tracked for a promotion to Senior Advisor.";
+            } else if (percentage >= 0.5) {
+                anecdoteText = "You survived busy season, but just barely. Your inconsistent advice cost the firm a few long-term clients, though we managed to avoid any major malpractice lawsuits. You'll be spending next week in remedial tax training.";
+            } else {
+                anecdoteText = "Disaster. The IRS has flagged our entire client roster for audit based on your aggressively incorrect advice. The founding partner is currently shredding documents, and security is on their way to pack up your desk.";
+            }
+            
+            document.getElementById('performance-anecdote').innerText = anecdoteText;
+        }
+
+        function restartSimulation() {
+            startGame();
+        }
+
+        // Initialize on load
+        window.onload = startGame;
+    </script>
+</body>
+</html>
