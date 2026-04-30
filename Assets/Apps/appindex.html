@@ -312,8 +312,21 @@
             opacity: 0.9;
         }
 
+        /* Instructions Text block */
+        .instructions-block {
+            font-size: 1.05rem;
+            line-height: 1.6;
+            text-align: left;
+            margin-bottom: 25px;
+            color: var(--text-dark);
+            background-color: rgba(0,0,0,0.02);
+            padding: 15px;
+            border-radius: 4px;
+            border-left: 4px solid var(--accent-blue);
+        }
+
         /* End Screen Styling */
-        #end-screen .modal-content {
+        #end-screen .modal-content, #start-screen .modal-content {
             border-top-color: var(--accent-blue);
         }
 
@@ -364,6 +377,25 @@
                 <div class="options-container" id="options-container">
                     </div>
             </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="start-screen">
+        <div class="modal-content">
+            <div class="modal-header">Welcome to the Firm</div>
+            <div class="instructions-block">
+                <strong>Scenario:</strong> You are a junior tax advisor, and busy season has officially begun. Clients will be stopping by your desk to ask for help with their complex tax situations.
+                <br><br>
+                <strong>Your Task:</strong> 
+                <ol style="margin-left: 20px; margin-top: 10px;">
+                    <li>Listen to the client's dilemma.</li>
+                    <li>Consult your <em>Tax Code Reference</em> book on the left side of your desk.</li>
+                    <li>Select the best, most compliant, and optimized advice using the <em>Official Advisory Form</em> on the right.</li>
+                </ol>
+                <br>
+                Provide the correct advice to boost your Firm Rating. Make a mistake, and you'll hear from the Partner. Good luck!
+            </div>
+            <button class="action-btn" onclick="startGame()">Clock In & Start Shift</button>
         </div>
     </div>
 
@@ -468,7 +500,14 @@
             return shuffled;
         }
 
+        function showStartScreen() {
+            document.getElementById('start-screen').style.display = 'flex';
+        }
+
         function startGame() {
+            // Hide the start screen
+            document.getElementById('start-screen').style.display = 'none';
+
             // Shuffle the scenarios and reset variables
             activeScenarios = shuffleArray(allScenarios);
             currentScenarioIndex = 0;
@@ -569,8 +608,8 @@
             startGame();
         }
 
-        // Initialize on load
-        window.onload = startGame;
+        // Initialize on load with the Start Screen
+        window.onload = showStartScreen;
     </script>
 </body>
 </html>
